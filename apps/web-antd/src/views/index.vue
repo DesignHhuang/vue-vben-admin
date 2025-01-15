@@ -56,7 +56,7 @@ const changeChecked = (bmusn: string, index: number, value: number) => {
     <div class="card"></div>
     <div class="card-content">
       <Input
-        class="!focus:ring-[#11BE86] my-[20px] w-[600px] outline-none !ring-2 !ring-[transparent] !duration-200"
+        class="my-[20px] w-[600px]"
         @change="handleKeywordChanged"
         size="large"
         placeholder="请输入正确的SN"
