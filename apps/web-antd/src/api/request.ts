@@ -1,6 +1,3 @@
-/**
- * 该文件可自行根据业务逻辑进行调整
- */
 import type { HttpResponse } from '@vben/request';
 
 import { useAppConfig } from '@vben/hooks';
@@ -14,10 +11,6 @@ import { useAccessStore } from '@vben/stores';
 
 import { message } from 'ant-design-vue';
 
-import { useAuthStore } from '#/store';
-
-import { refreshTokenApi } from './core';
-
 const { apiURL } = useAppConfig(import.meta.env, import.meta.env.PROD);
 
 function createRequestClient(baseURL: string) {
@@ -28,30 +21,15 @@ function createRequestClient(baseURL: string) {
   /**
    * 重新认证逻辑
    */
-  async function doReAuthenticate() {
-    console.warn('Access token or refresh token is invalid or expired. ');
-    const accessStore = useAccessStore();
-    const authStore = useAuthStore();
-    accessStore.setAccessToken(null);
-    if (
-      preferences.app.loginExpiredMode === 'modal' &&
-      accessStore.isAccessChecked
-    ) {
-      accessStore.setLoginExpired(true);
-    } else {
-      await authStore.logout();
-    }
+  function doReAuthenticate() {
+    return Promise.resolve();
   }
 
   /**
    * 刷新token逻辑
    */
   async function doRefreshToken() {
-    const accessStore = useAccessStore();
-    const resp = await refreshTokenApi();
-    const newToken = resp.data;
-    accessStore.setAccessToken(newToken);
-    return newToken;
+    return '';
   }
 
   function formatToken(token: null | string) {
