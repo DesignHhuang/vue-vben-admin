@@ -10,7 +10,7 @@ export default defineConfig(async () => {
             changeOrigin: true,
             rewrite: (path) => path.replace(/^\/api/, ''),
             // mock代理目标地址
-            target: 'http://localhost:5320/api',
+            target: 'http://api.bms-desk.com:8082/api/v1/',
             ws: true,
           },
         },

@@ -74,8 +74,8 @@ function createRequestClient(baseURL: string) {
     fulfilled: (response) => {
       const { data: responseData, status } = response;
 
-      const { code, data } = responseData;
-      if (status >= 200 && status < 400 && code === 0) {
+      const data: any = responseData;
+      if (status >= 200 && status < 400) {
         return data;
       }
 

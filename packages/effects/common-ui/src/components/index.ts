@@ -17,6 +17,7 @@ export {
   VbenLoading,
   VbenPinInput,
   VbenSpinner,
+  VbenTooltip,
 } from '@vben-core/shadcn-ui';
 
 export { globalShareState } from '@vben-core/shared/global-state';
