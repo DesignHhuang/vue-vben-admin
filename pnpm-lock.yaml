@@ -632,9 +632,6 @@ importers:
 
   apps/web-antd:
     dependencies:
-      '@vben/access':
-        specifier: workspace:*
-        version: link:../../packages/effects/access
       '@vben/common-ui':
         specifier: workspace:*
         version: link:../../packages/effects/common-ui
@@ -647,15 +644,9 @@ importers:
       '@vben/icons':
         specifier: workspace:*
         version: link:../../packages/icons
-      '@vben/layouts':
-        specifier: workspace:*
-        version: link:../../packages/effects/layouts
       '@vben/locales':
         specifier: workspace:*
         version: link:../../packages/locales
-      '@vben/plugins':
-        specifier: workspace:*
-        version: link:../../packages/effects/plugins
       '@vben/preferences':
         specifier: workspace:*
         version: link:../../packages/preferences
@@ -680,9 +671,6 @@ importers:
       ant-design-vue:
         specifier: 'catalog:'
         version: 4.2.6(vue@3.5.13(typescript@5.7.3))
-      dayjs:
-        specifier: 'catalog:'
-        version: 1.11.13
       pinia:
         specifier: ^2.3.0
         version: 2.3.0(typescript@5.7.3)(vue@3.5.13(typescript@5.7.3))

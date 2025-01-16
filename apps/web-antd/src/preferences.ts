@@ -10,4 +10,7 @@ export const overridesPreferences = defineOverridesPreferences({
   app: {
     name: 'Cell Balance',
   },
+  theme: {
+    mode: 'light',
+  },
 });

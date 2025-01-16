@@ -87,6 +87,10 @@ function createRequestClient(baseURL: string) {
   return client;
 }
 
+// 测试环境使用
 export const requestClient = createRequestClient(apiURL);
+
+// 生产环境使用
+export const prodRequestClient = createRequestClient('/prod-api');
 
 export const baseRequestClient = new RequestClient({ baseURL: apiURL });

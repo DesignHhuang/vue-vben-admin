@@ -1,6 +1,6 @@
 {
   "name": "@vben/web-antd",
-  "version": "5.5.2",
+  "version": "5.5.3",
   "license": "MIT",
   "type": "module",
   "scripts": {
@@ -14,14 +14,11 @@
     "#/*": "./src/*"
   },
   "dependencies": {
-    "@vben/access": "workspace:*",
     "@vben/common-ui": "workspace:*",
     "@vben/constants": "workspace:*",
     "@vben/hooks": "workspace:*",
     "@vben/icons": "workspace:*",
-    "@vben/layouts": "workspace:*",
     "@vben/locales": "workspace:*",
-    "@vben/plugins": "workspace:*",
     "@vben/preferences": "workspace:*",
     "@vben/request": "workspace:*",
     "@vben/stores": "workspace:*",
@@ -30,7 +27,6 @@
     "@vben/utils": "workspace:*",
     "@vueuse/core": "catalog:",
     "ant-design-vue": "catalog:",
-    "dayjs": "catalog:",
     "pinia": "catalog:",
     "vue": "catalog:",
     "vue-router": "catalog:"
