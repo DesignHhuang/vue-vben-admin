@@ -6,7 +6,7 @@ import { IconOir } from '@vben/icons';
 import { isEmpty } from '@vben/utils';
 
 import { useDebounceFn } from '@vueuse/core';
-import { Divider, Input, message, Select } from 'ant-design-vue';
+import { Button, Input, message, Select } from 'ant-design-vue';
 
 import {
   getBatData,
@@ -19,6 +19,7 @@ const keyword = ref('');
 const batData = ref<any[]>([]);
 const refreshing = ref(false);
 const env = ref('prod');
+const sendData = ref<any[]>([]);
 
 const envs = [
   { label: '生产环境均衡', value: 'prod' },
@@ -52,8 +53,8 @@ const handleKeywordChanged = useDebounceFn((e: any) => {
   getCellData();
 }, 300);
 
-// 处理数据并传给接口
-const changeChecked = async (bmusn: string, index: number, value: number) => {
+// 处理数据
+const changeChecked = (bmusn: string, index: number, value: number) => {
   batData.value = batData.value.map((res) => {
     if (res.Reg_09_BMUSN === bmusn) {
       const balanceData = res.Reg_0E_Balance_State_au16;
@@ -62,14 +63,15 @@ const changeChecked = async (bmusn: string, index: number, value: number) => {
     }
     return res;
   });
-  const sendData = batData.value.map((res) => res.Reg_0E_Balance_State_au16);
+  sendData.value = batData.value.map((res) => res.Reg_0E_Balance_State_au16);
+};
+
+const sendCellData = async () => {
   // 处理数据请求
   env.value === 'prod'
-    ? await setProdCellBalance(keyword.value, sendData)
-    : await setCellBalance(keyword.value, sendData);
-  message.success(
-    value ? `电芯${index + 1}均衡已关闭` : `电芯${index + 1}均衡已开启`,
-  );
+    ? await setProdCellBalance(keyword.value, sendData.value)
+    : await setCellBalance(keyword.value, sendData.value);
+  message.success('电芯均衡数据已下发');
 };
 
 const handleEnvChange = () => {
@@ -81,6 +83,28 @@ const handleEnvChange = () => {
 const startRefresh = () => {
   refreshing.value = true;
   getCellData();
+};
+
+const checkAll = (bmusn: string) => {
+  batData.value = batData.value.map((res) => {
+    if (res.Reg_09_BMUSN === bmusn) {
+      const balanceData = res.Reg_0E_Balance_State_au16.map((_: any) => 1);
+      res.Reg_0E_Balance_State_au16 = balanceData;
+    }
+    return res;
+  });
+  sendData.value = batData.value.map((res) => res.Reg_0E_Balance_State_au16);
+};
+
+const resetAll = (bmusn: string) => {
+  batData.value = batData.value.map((res) => {
+    if (res.Reg_09_BMUSN === bmusn) {
+      const balanceData = res.Reg_0E_Balance_State_au16.map((_: any) => 0);
+      res.Reg_0E_Balance_State_au16 = balanceData;
+    }
+    return res;
+  });
+  sendData.value = batData.value.map((res) => res.Reg_0E_Balance_State_au16);
 };
 </script>
 
@@ -111,9 +135,37 @@ const startRefresh = () => {
       </div>
 
       <div class="h-full w-full overflow-y-auto p-[24px]">
-        <div v-if="batData.length > 0">
-          <template :key="bat.Reg_09_BMUSN" v-for="(bat, index) in batData">
-            <Divider> 电池{{ index + 1 }} SN：{{ bat.Reg_09_BMUSN }} </Divider>
+        <div v-if="batData.length > 0" class="grid grid-cols-1 divide-y">
+          <div
+            class="py-4"
+            :key="bat.Reg_09_BMUSN"
+            v-for="(bat, index) in batData"
+          >
+            <div class="mb-4 flex items-center justify-between">
+              <div class="text-base font-semibold">
+                Battery {{ index + 1 }} -- SN：{{ bat.Reg_09_BMUSN }}
+              </div>
+              <div class="flex items-center justify-end">
+                <Button
+                  ghost
+                  class="mr-2"
+                  size="small"
+                  @click="checkAll(bat.Reg_09_BMUSN)"
+                >
+                  全选
+                </Button>
+                <Button
+                  type="dashed"
+                  ghost
+                  class="ml-2"
+                  size="small"
+                  @click="resetAll(bat.Reg_09_BMUSN)"
+                >
+                  重置
+                </Button>
+              </div>
+            </div>
+
             <div class="flex w-full justify-center">
               <VbenTooltip
                 side="top"
@@ -130,9 +182,29 @@ const startRefresh = () => {
                 {{ cell ? `电芯${i + 1}关闭均衡` : `电芯${i + 1}开启均衡` }}
               </VbenTooltip>
             </div>
-          </template>
+          </div>
         </div>
       </div>
+
+      <button class="send-btn" @click="sendCellData">
+        <div class="svg-wrapper-1">
+          <div class="svg-wrapper">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              width="24"
+              height="24"
+            >
+              <path fill="none" d="M0 0h24v24H0z" />
+              <path
+                fill="currentColor"
+                d="M1.946 9.315c-.522-.174-.527-.455.01-.634l19.087-6.362c.529-.176.832.12.684.638l-5.454 19.086c-.15.529-.455.547-.679.045L12 14l6-8-8 6-8.054-2.685z"
+              />
+            </svg>
+          </div>
+        </div>
+        <span>下发数据</span>
+      </button>
     </div>
   </div>
 </template>
@@ -199,5 +271,64 @@ const startRefresh = () => {
 
 .cell-active::before {
   transform: scale(4) translateY(-2px);
+}
+
+.send-btn {
+  display: flex;
+  align-items: center;
+  padding: 0.5em 1em;
+  padding-left: 0.9em;
+  margin-top: 24px;
+  overflow: hidden;
+  font-family: inherit;
+  font-size: 16px;
+  color: white;
+  cursor: pointer;
+  background: #1e1e1e9c;
+  border: none;
+  border-radius: 16px;
+  transition: all 0.2s;
+}
+
+.send-btn span {
+  display: block;
+  margin-left: 0.3em;
+  transition: all 0.3s ease-in-out;
+}
+
+.send-btn svg {
+  display: block;
+  transition: transform 0.3s ease-in-out;
+  transform-origin: center center;
+}
+
+.send-btn:hover {
+  background: #0ce515;
+}
+
+.send-btn:hover .svg-wrapper {
+  animation: fly-1 0.6s ease-in-out infinite alternate;
+}
+
+.send-btn:hover svg {
+  transform: translateX(2em) rotate(45deg) scale(1.1);
+}
+
+.send-btn:hover span {
+  transform: translateX(5em);
+}
+
+.send-btn:active {
+  transform: scale(0.95);
+}
+
+@keyframes fly-1 {
+  from {
+    transform: translateY(0.1em);
+  }
+
+  to {
+    transform: translateY(-0.1em);
+  }
 }
 </style>
