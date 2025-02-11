@@ -54,9 +54,9 @@ const handleKeywordChanged = useDebounceFn((e: any) => {
 }, 300);
 
 // 处理数据
-const changeChecked = (bmusn: string, index: number, value: number) => {
-  batData.value = batData.value.map((res) => {
-    if (res.Reg_09_BMUSN === bmusn) {
+const changeChecked = (i: number, index: number, value: number) => {
+  batData.value = batData.value.map((res, bmuindex) => {
+    if (bmuindex === i) {
       const balanceData = res.Reg_0E_Balance_State_au16;
       balanceData.splice(index, 1, value ? 0 : 1);
       res.Reg_0E_Balance_State_au16 = balanceData;
@@ -85,9 +85,9 @@ const startRefresh = () => {
   getCellData();
 };
 
-const checkAll = (bmusn: string) => {
-  batData.value = batData.value.map((res) => {
-    if (res.Reg_09_BMUSN === bmusn) {
+const checkAll = (i: number) => {
+  batData.value = batData.value.map((res, index) => {
+    if (index === i) {
       const balanceData = res.Reg_0E_Balance_State_au16.map((_: any) => 1);
       res.Reg_0E_Balance_State_au16 = balanceData;
     }
@@ -96,9 +96,9 @@ const checkAll = (bmusn: string) => {
   sendData.value = batData.value.map((res) => res.Reg_0E_Balance_State_au16);
 };
 
-const resetAll = (bmusn: string) => {
-  batData.value = batData.value.map((res) => {
-    if (res.Reg_09_BMUSN === bmusn) {
+const resetAll = (i: number) => {
+  batData.value = batData.value.map((res, index) => {
+    if (index === i) {
       const balanceData = res.Reg_0E_Balance_State_au16.map((_: any) => 0);
       res.Reg_0E_Balance_State_au16 = balanceData;
     }
@@ -136,11 +136,7 @@ const resetAll = (bmusn: string) => {
 
       <div class="h-full w-full overflow-y-auto p-[24px]">
         <div v-if="batData.length > 0" class="grid grid-cols-1 divide-y">
-          <div
-            class="py-4"
-            :key="bat.Reg_09_BMUSN"
-            v-for="(bat, index) in batData"
-          >
+          <div class="py-4" :key="index" v-for="(bat, index) in batData">
             <div class="mb-4 flex items-center justify-between">
               <div class="text-base font-semibold">
                 Battery {{ index + 1 }} -- SN：{{ bat.Reg_09_BMUSN }}
@@ -150,7 +146,7 @@ const resetAll = (bmusn: string) => {
                   ghost
                   class="mr-2"
                   size="small"
-                  @click="checkAll(bat.Reg_09_BMUSN)"
+                  @click="checkAll(index)"
                 >
                   全选
                 </Button>
@@ -159,7 +155,7 @@ const resetAll = (bmusn: string) => {
                   ghost
                   class="ml-2"
                   size="small"
-                  @click="resetAll(bat.Reg_09_BMUSN)"
+                  @click="resetAll(index)"
                 >
                   重置
                 </Button>
@@ -169,14 +165,14 @@ const resetAll = (bmusn: string) => {
             <div class="flex w-full justify-center">
               <VbenTooltip
                 side="top"
-                :key="`${bat.Reg_09_BMUSN}_${i}`"
+                :key="`${index}_${i}`"
                 v-for="(cell, i) in bat.Reg_0E_Balance_State_au16"
               >
                 <template #trigger>
                   <div
                     class="cell mx-[2px]"
                     :class="{ 'cell-active': cell }"
-                    @click="changeChecked(bat.Reg_09_BMUSN, i, cell)"
+                    @click="changeChecked(index, i, cell)"
                   ></div>
                 </template>
                 {{ cell ? `电芯${i + 1}关闭均衡` : `电芯${i + 1}开启均衡` }}
