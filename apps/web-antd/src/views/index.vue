@@ -21,6 +21,8 @@ const refreshing = ref(false);
 const env = ref('prod');
 const sendData = ref<any[]>([]);
 
+const isGen2 = ref(false);
+
 const envs = [
   { label: '生产环境均衡', value: 'prod' },
   { label: '测试环境均衡', value: 'test' },
@@ -40,7 +42,26 @@ const getCellData = async () => {
       : await getBatData(keyword.value);
   if (!isEmpty(data)) {
     const dataObj: any = Object.values(data)[0];
-    batData.value = dataObj['48'].level1;
+    isGen2.value = Object.hasOwnProperty.call(dataObj, 'slave板数据');
+    if (isGen2.value) {
+      const merged = [];
+      // gen2
+      const arr = dataObj['slave板数据'].map((item: any) => {
+        const balanceData = [];
+        for (let i = 1; i <= 16; i++) {
+          balanceData.push(item[`均衡开启标志${i}`]);
+        }
+        return balanceData;
+      });
+      for (let i = 0; i < arr.length; i += 2) {
+        const pair = [...(arr[i] || []), ...(arr[i + 1] || [])];
+        merged.push(pair);
+      }
+      batData.value = merged.map((res) => ({ cellBalance: res }));
+    } else {
+      // gen3
+      batData.value = dataObj['48'].level1;
+    }
   }
   refreshing.value = false;
 };
@@ -55,15 +76,29 @@ const handleKeywordChanged = useDebounceFn((e: any) => {
 
 // 处理数据
 const changeChecked = (i: number, index: number, value: number) => {
-  batData.value = batData.value.map((res, bmuindex) => {
-    if (bmuindex === i) {
-      const balanceData = res.Reg_0E_Balance_State_au16;
-      balanceData.splice(index, 1, value ? 0 : 1);
-      res.Reg_0E_Balance_State_au16 = balanceData;
-    }
-    return res;
-  });
-  sendData.value = batData.value.map((res) => res.Reg_0E_Balance_State_au16);
+  if (isGen2.value) {
+    // gen2
+    batData.value = batData.value.map((res, bmuindex) => {
+      if (bmuindex === i) {
+        const balanceData = res.cellBalance;
+        balanceData.splice(index, 1, value ? 0 : 1);
+        res.cellBalance = balanceData;
+      }
+      return res;
+    });
+    sendData.value = batData.value.map((res) => res.cellBalance);
+  } else {
+    // gen3
+    batData.value = batData.value.map((res, bmuindex) => {
+      if (bmuindex === i) {
+        const balanceData = res.Reg_0E_Balance_State_au16;
+        balanceData.splice(index, 1, value ? 0 : 1);
+        res.Reg_0E_Balance_State_au16 = balanceData;
+      }
+      return res;
+    });
+    sendData.value = batData.value.map((res) => res.Reg_0E_Balance_State_au16);
+  }
 };
 
 const sendCellData = async () => {
@@ -86,25 +121,51 @@ const startRefresh = () => {
 };
 
 const checkAll = (i: number) => {
-  batData.value = batData.value.map((res, index) => {
-    if (index === i) {
-      const balanceData = res.Reg_0E_Balance_State_au16.map((_: any) => 1);
-      res.Reg_0E_Balance_State_au16 = balanceData;
-    }
-    return res;
-  });
-  sendData.value = batData.value.map((res) => res.Reg_0E_Balance_State_au16);
+  if (isGen2.value) {
+    // gen2
+    batData.value = batData.value.map((res, index) => {
+      if (index === i) {
+        const balanceData = res.cellBalance.map((_: any) => 1);
+        res.cellBalance = balanceData;
+      }
+      return res;
+    });
+    sendData.value = batData.value.map((res) => res.cellBalance);
+  } else {
+    // gen3
+    batData.value = batData.value.map((res, index) => {
+      if (index === i) {
+        const balanceData = res.Reg_0E_Balance_State_au16.map((_: any) => 1);
+        res.Reg_0E_Balance_State_au16 = balanceData;
+      }
+      return res;
+    });
+    sendData.value = batData.value.map((res) => res.Reg_0E_Balance_State_au16);
+  }
 };
 
 const resetAll = (i: number) => {
-  batData.value = batData.value.map((res, index) => {
-    if (index === i) {
-      const balanceData = res.Reg_0E_Balance_State_au16.map((_: any) => 0);
-      res.Reg_0E_Balance_State_au16 = balanceData;
-    }
-    return res;
-  });
-  sendData.value = batData.value.map((res) => res.Reg_0E_Balance_State_au16);
+  if (isGen2.value) {
+    // gen2
+    batData.value = batData.value.map((res, index) => {
+      if (index === i) {
+        const balanceData = res.cellBalance.map((_: any) => 0);
+        res.cellBalance = balanceData;
+      }
+      return res;
+    });
+    sendData.value = batData.value.map((res) => res.cellBalance);
+  } else {
+    // gen3
+    batData.value = batData.value.map((res, index) => {
+      if (index === i) {
+        const balanceData = res.Reg_0E_Balance_State_au16.map((_: any) => 0);
+        res.Reg_0E_Balance_State_au16 = balanceData;
+      }
+      return res;
+    });
+    sendData.value = batData.value.map((res) => res.Reg_0E_Balance_State_au16);
+  }
 };
 </script>
 
@@ -136,49 +197,97 @@ const resetAll = (i: number) => {
 
       <div class="h-full w-full overflow-y-auto p-[24px]">
         <div v-if="batData.length > 0" class="grid grid-cols-1 divide-y">
-          <div class="py-4" :key="index" v-for="(bat, index) in batData">
-            <div class="mb-4 flex items-center justify-between">
-              <div class="text-base font-semibold">
-                Battery {{ index + 1 }} -- SN：{{ bat.Reg_09_BMUSN }}
+          <template v-if="isGen2">
+            <div class="py-4" :key="index" v-for="(bat, index) in batData">
+              <div class="mb-4 flex items-center justify-between">
+                <div class="text-base font-semibold">
+                  Battery {{ index + 1 }}
+                </div>
+                <div class="flex items-center justify-end">
+                  <Button
+                    ghost
+                    class="mr-2"
+                    size="small"
+                    @click="checkAll(index)"
+                  >
+                    全选
+                  </Button>
+                  <Button
+                    type="dashed"
+                    ghost
+                    class="ml-2"
+                    size="small"
+                    @click="resetAll(index)"
+                  >
+                    重置
+                  </Button>
+                </div>
               </div>
-              <div class="flex items-center justify-end">
-                <Button
-                  ghost
-                  class="mr-2"
-                  size="small"
-                  @click="checkAll(index)"
-                >
-                  全选
-                </Button>
-                <Button
-                  type="dashed"
-                  ghost
-                  class="ml-2"
-                  size="small"
-                  @click="resetAll(index)"
-                >
-                  重置
-                </Button>
-              </div>
-            </div>
 
-            <div class="flex w-full justify-center">
-              <VbenTooltip
-                side="top"
-                :key="`${index}_${i}`"
-                v-for="(cell, i) in bat.Reg_0E_Balance_State_au16"
-              >
-                <template #trigger>
-                  <div
-                    class="cell mx-[2px]"
-                    :class="{ 'cell-active': cell }"
-                    @click="changeChecked(index, i, cell)"
-                  ></div>
-                </template>
-                {{ cell ? `电芯${i + 1}关闭均衡` : `电芯${i + 1}开启均衡` }}
-              </VbenTooltip>
+              <div class="flex w-full justify-center">
+                <VbenTooltip
+                  side="top"
+                  :key="`${index}_${i}`"
+                  v-for="(cell, i) in bat.cellBalance"
+                >
+                  <template #trigger>
+                    <div
+                      class="cell mx-[2px]"
+                      :class="{ 'cell-active': cell }"
+                      @click="changeChecked(index, i, cell)"
+                    ></div>
+                  </template>
+                  {{ cell ? `电芯${i + 1}关闭均衡` : `电芯${i + 1}开启均衡` }}
+                </VbenTooltip>
+              </div>
             </div>
-          </div>
+          </template>
+
+          <template v-else>
+            <div class="py-4" :key="index" v-for="(bat, index) in batData">
+              <div class="mb-4 flex items-center justify-between">
+                <div class="text-base font-semibold">
+                  Battery {{ index + 1 }} -- SN：{{ bat.Reg_09_BMUSN }}
+                </div>
+                <div class="flex items-center justify-end">
+                  <Button
+                    ghost
+                    class="mr-2"
+                    size="small"
+                    @click="checkAll(index)"
+                  >
+                    全选
+                  </Button>
+                  <Button
+                    type="dashed"
+                    ghost
+                    class="ml-2"
+                    size="small"
+                    @click="resetAll(index)"
+                  >
+                    重置
+                  </Button>
+                </div>
+              </div>
+
+              <div class="flex w-full justify-center">
+                <VbenTooltip
+                  side="top"
+                  :key="`${index}_${i}`"
+                  v-for="(cell, i) in bat.Reg_0E_Balance_State_au16"
+                >
+                  <template #trigger>
+                    <div
+                      class="cell mx-[2px]"
+                      :class="{ 'cell-active': cell }"
+                      @click="changeChecked(index, i, cell)"
+                    ></div>
+                  </template>
+                  {{ cell ? `电芯${i + 1}关闭均衡` : `电芯${i + 1}开启均衡` }}
+                </VbenTooltip>
+              </div>
+            </div>
+          </template>
         </div>
       </div>
 
